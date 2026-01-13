@@ -6,6 +6,7 @@ import cors from "cors";
 import birthdayRoutes from "./routes/birthday.routes.js";
 import contributionRoutes from "./routes/contribution.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use((req, res, next) => {
 app.use("/api/birthday", birthdayRoutes);
 app.use("/api/contribution", contributionRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/auth", authRoutes);
 
 
 /* DB + SERVER */

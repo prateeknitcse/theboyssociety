@@ -4,86 +4,62 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { fetchTodayBirthday } from "@/lib/api";
 
-type Contribution = {
-  user: string;
-  status: "paid" | "pending";
-  paidAt?: string | null;
-};
-
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      try {
-        const result = await fetchTodayBirthday();
-        setData(result);
-      } catch (err) {
-        setError("Failed to load dashboard");
-      } finally {
-        setLoading(false);
-      }
+      const result = await fetchTodayBirthday();
+      setData(result);
+      setLoading(false);
     }
-
     load();
   }, []);
 
-  /* ⏳ Loading state */
+  const handlePayNow = async () => {
+    await fetch("http://localhost:5000/api/contribution/pay", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        birthdayId: data.birthdayId,
+        amount: data.birthday.amount,
+      }),
+    });
+
+    window.location.reload();
+  };
+
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center text-gray-400">
-        Loading dashboard...
+      <div className="h-full flex items-center justify-center text-gray-400">
+        Loading...
       </div>
     );
   }
 
-  /* ❌ Error state */
-  if (error) {
+  if (!data.hasBirthday) {
     return (
-      <div className="h-full w-full flex items-center justify-center text-red-400">
-        {error}
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        {data.message}
       </div>
     );
   }
 
-  /* 🎈 No birthday OR birthday boy */
-  if (!data?.hasBirthday) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-gray-400 text-lg">
-          {data?.message || "No birthday today 🎈"}
-        </p>
-      </div>
-    );
-  }
-
-  /* 🎂 Birthday exists */
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        {/* Header */}
-        <motion.h1
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-bold mb-10"
-        >
+        <motion.h1 className="text-4xl font-bold mb-6">
           🎉 {data.birthday.name}’s Birthday
         </motion.h1>
 
-        {/* Birthday Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass p-6 mb-8"
-        >
-          <p className="text-gray-300 mb-4">
-            Contribution Amount: ₹{data.birthday.amount}
-          </p>
-
-          <p className="text-sm">
-            Your Status:{" "}
+        <div className="glass p-6 mb-8">
+          <p>Amount: ₹{data.birthday.amount}</p>
+          <p className="mt-2">
+            Status:{" "}
             <span
               className={
                 data.myStatus === "paid"
@@ -91,40 +67,38 @@ export default function DashboardPage() {
                   : "text-red-400"
               }
             >
-              {data.myStatus === "paid" ? "✔ Paid" : "✖ Not Paid"}
+              {data.myStatus}
             </span>
           </p>
-        </motion.div>
 
-        {/* Contributions List */}
+          <button
+            disabled={data.myStatus === "paid"}
+            onClick={handlePayNow}
+            className="mt-4 px-6 py-2 bg-green-600 rounded disabled:opacity-50"
+          >
+            {data.myStatus === "paid" ? "Paid ✔" : "Pay Now"}
+          </button>
+        </div>
+
         <div className="glass p-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Contributions
-          </h2>
-
-          <ul className="space-y-3">
-            {data.contributions.map(
-              (c: Contribution, index: number) => (
-                <li
-                  key={index}
-                  className="flex justify-between border-b border-gray-700 pb-2"
-                >
-                  <span>{c.user}</span>
-                  <span
-                    className={
-                      c.status === "paid"
-                        ? "text-green-400"
-                        : "text-red-400"
-                    }
-                  >
-                    {c.status === "paid"
-                      ? "✔ Paid"
-                      : "✖ Not Paid"}
-                  </span>
-                </li>
-              )
-            )}
-          </ul>
+          <h2 className="text-xl mb-4">Contributions</h2>
+          {data.contributions.map((c: any, i: number) => (
+            <div
+              key={i}
+              className="flex justify-between border-b border-gray-700 py-2"
+            >
+              <span>{c.user}</span>
+              <span
+                className={
+                  c.status === "paid"
+                    ? "text-green-400"
+                    : "text-red-400"
+                }
+              >
+                {c.status}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
