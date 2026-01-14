@@ -1,5 +1,6 @@
 import Contribution from "../models/Contribution.js";
 import Birthday from "../models/Birthday.js";
+import Certificate from "../models/Certificate.js"; // ✅ ADDED
 
 /**
  * GET contribution status for a birthday
@@ -48,9 +49,7 @@ export const payContribution = async (req, res) => {
     });
 
     if (existing && existing.status === "paid") {
-      return res
-        .status(400)
-        .json({ message: "Already paid" });
+      return res.status(400).json({ message: "Already paid" });
     }
 
     let contribution;
@@ -69,6 +68,13 @@ export const payContribution = async (req, res) => {
         paidAt: new Date(),
       });
     }
+
+    // ✅ STEP 3.2 — SAVE CERTIFICATE AFTER PAYMENT
+    await Certificate.create({
+      user: userId,
+      amount,
+      purpose: "Birthday Contribution",
+    });
 
     res.status(200).json({
       message: "Payment successful",

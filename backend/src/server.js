@@ -7,6 +7,8 @@ import birthdayRoutes from "./routes/birthday.routes.js";
 import contributionRoutes from "./routes/contribution.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import certificateRoutes from "./routes/certificate.routes.js";
+
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use("/api/contribution", contributionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/certificate", certificateRoutes);
+
 
 
 

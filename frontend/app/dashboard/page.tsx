@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔐 ROUTE PROTECTION (ONLY CHANGE)
+  // 🔐 ROUTE PROTECTION
   useEffect(() => {
     if (!isLoggedIn()) {
       router.push("/login");
@@ -29,49 +29,75 @@ export default function DashboardPage() {
   }, []);
 
   const handlePayNow = async () => {
-  const orderRes = await fetch(
-    "http://localhost:5000/api/payment/create-order",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const orderRes = await fetch(
+      "http://localhost:5000/api/payment/create-order",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ amount: data.birthday.amount }),
+      }
+    );
+
+    const order = await orderRes.json();
+
+    const options = {
+      key: "YOUR_RAZORPAY_KEY_ID",
+      amount: order.amount,
+      currency: "INR",
+      name: "Boys Society",
+      order_id: order.id,
+      handler: async () => {
+        await fetch(
+          "http://localhost:5000/api/contribution/pay",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+              birthdayId: data.birthdayId,
+              amount: data.birthday.amount,
+            }),
+          }
+        );
+        window.location.reload();
       },
-      body: JSON.stringify({ amount: data.birthday.amount }),
-    }
-  );
+    };
 
-  const order = await orderRes.json();
-
-  const options = {
-    key: "YOUR_RAZORPAY_KEY_ID",
-    amount: order.amount,
-    currency: "INR",
-    name: "Boys Society",
-    order_id: order.id,
-    handler: async () => {
-      await fetch(
-        "http://localhost:5000/api/contribution/pay",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            birthdayId: data.birthdayId,
-            amount: data.birthday.amount,
-          }),
-        }
-      );
-      window.location.reload();
-    },
+    // @ts-ignore
+    new window.Razorpay(options).open();
   };
 
-  // @ts-ignore
-  new window.Razorpay(options).open();
-};
+  // ✅ STEP 4.6 — CERTIFICATE DOWNLOAD HANDLER (NEW)
+  const handleDownloadCertificate = async () => {
+    const res = await fetch(
+      "http://localhost:5000/api/certificate/generate",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          name: "Member", // backend-safe placeholder
+          amount: data.birthday.amount,
+          purpose: `${data.birthday.name}'s Birthday`,
+        }),
+      }
+    );
 
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "certificate.pdf";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -117,6 +143,15 @@ export default function DashboardPage() {
             className="mt-4 px-6 py-2 bg-green-600 rounded disabled:opacity-50"
           >
             {data.myStatus === "paid" ? "Paid ✔" : "Pay Now"}
+          </button>
+
+          {/* ✅ STEP 4.6 — DOWNLOAD CERTIFICATE BUTTON (NEW) */}
+          <button
+            disabled={data.myStatus !== "paid"}
+            onClick={handleDownloadCertificate}
+            className="mt-4 ml-4 px-6 py-2 bg-blue-600 rounded disabled:opacity-50"
+          >
+            Download Certificate
           </button>
         </div>
 
